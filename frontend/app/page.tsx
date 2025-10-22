@@ -13,9 +13,24 @@ export default function Home() {
       setIsLoading(true);
       const presignedUrl = await getPresignedUrl(file);
       console.log('Presigned URL:', presignedUrl);
-      // Here you can use the presignedUrl for direct upload to S3 if needed
+
+      const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+        },
+        body: file,
+      });
+
+      if (!response.ok) {
+        console.error('Error uploading file:', await response.text());
+        return;
+      }
+
+      alert('File uploaded successfully!');
     } catch (error) {
       console.error('Error:', error);
+      alert('Error uploading file');
     } finally {
       setIsLoading(false);
     }
@@ -35,7 +50,7 @@ export default function Home() {
 
           {isLoading && (
             <p className="mt-4 text-sm text-gray-600 text-center">
-              Getting presigned URL...
+              Uploading...
             </p>
           )}
         </div>

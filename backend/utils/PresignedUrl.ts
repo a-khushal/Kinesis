@@ -11,6 +11,7 @@ const s3 = new AWS.S3();
 export const generatePresignedUploadUrl = (
     bucketName: string,
     objectKey: string,
+    fileType: string = 'application/octet-stream',
     expirationSeconds: number = 600
 ): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -18,6 +19,7 @@ export const generatePresignedUploadUrl = (
             Bucket: bucketName,
             Key: objectKey,
             Expires: expirationSeconds,
+            ContentType: fileType,
         };
 
         s3.getSignedUrl("putObject", params, (err, url) => {
