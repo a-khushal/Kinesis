@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { getPresignedUrl } from '../hooks/useFileUpload';
+import { addDbEntry } from '@/hooks/AddDbEntry';
 
 export default function Home() {
   const allowedVideoFormats = ['video/mp4', 'video/webm', 'video/ogg'];
@@ -11,8 +12,8 @@ export default function Home() {
   const handleFileSelect = async (file: File) => {
     try {
       setIsLoading(true);
-      const presignedUrl = await getPresignedUrl(file);
-      console.log('Presigned URL:', presignedUrl);
+      const { url: presignedUrl, videoId, s3InputKey } = await getPresignedUrl(file);
+      console.log(presignedUrl)
 
       const response = await fetch(presignedUrl, {
         method: 'PUT',
@@ -27,7 +28,10 @@ export default function Home() {
         return;
       }
 
-      alert('File uploaded successfully!');
+      const res = await addDbEntry({ videoId, s3InputKey, originalFileName: file.name, contentType: file.type })
+      if (response.ok && res.success) {
+        alert('File uploaded successfully!');
+      }
     } catch (error) {
       console.error('Error:', error);
       alert('Error uploading file');
@@ -57,7 +61,7 @@ export default function Home() {
 
         <div className="text-center text-sm text-gray-500">
           <p>Supported formats: {allowedVideoFormats.join(', ')}</p>
-          <p className="mt-1">Max file size: 100MB</p>
+          <p className="mt-1">Max file size: 50MB</p>
         </div>
       </div>
     </div>

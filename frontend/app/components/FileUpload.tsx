@@ -2,10 +2,17 @@
 
 import { useState, useRef } from 'react';
 
-export function FileUpload({ onFileSelect, onCancel, allowedFormats, disabled = false }: {
+export function FileUpload({
+    onFileSelect,
+    onCancel,
+    allowedFormats,
+    maxFileSize = 50 * 1024 * 1024,
+    disabled = false
+}: {
     onFileSelect: (file: File) => void;
     onCancel?: () => void;
     allowedFormats: string[];
+    maxFileSize?: number;
     disabled?: boolean;
 }) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -19,6 +26,12 @@ export function FileUpload({ onFileSelect, onCancel, allowedFormats, disabled = 
 
         if (!allowedFormats.includes(file.type)) {
             alert(`Only ${allowedFormats.join(', ')} files are allowed!`);
+            return;
+        }
+
+        if (file.size > maxFileSize) {
+            const maxSizeMB = (maxFileSize / (1024 * 1024)).toFixed(2);
+            alert(`File is too large. Maximum file size is ${maxSizeMB}MB.`);
             return;
         }
 
@@ -81,15 +94,11 @@ export function FileUpload({ onFileSelect, onCancel, allowedFormats, disabled = 
                         onClick={handleSelectNewFile}
                         className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
                         disabled={disabled}
-                        >
-                            selected file
+                    >
+                        selected file
                     </button>
                 </div>
             )}
-
-            <p className={`mt-2 text-sm ${disabled ? 'text-gray-400' : 'text-gray-500'}`}>
-                Supported formats: {allowedFormats.join(', ')}
-            </p>
         </div>
     );
 }

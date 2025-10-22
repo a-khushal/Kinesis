@@ -17,7 +17,11 @@ export async function getPresignedUrl(file: File) {
     }
 
     const data = await response.json();
-    return data.url;
+    return {
+      url: data.url,
+      videoId: data.videoId,
+      s3InputKey: data.s3InputKey
+    }
   } catch (error) {
     console.error('Error getting presigned URL:', error);
     throw error;

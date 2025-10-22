@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Videos" ALTER COLUMN "resolutions" SET DEFAULT ARRAY[]::TEXT[],
+ALTER COLUMN "s3OutputPaths" SET DEFAULT ARRAY[]::TEXT[];

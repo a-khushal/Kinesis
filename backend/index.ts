@@ -1,11 +1,14 @@
 import express from 'express';
 import routes from './routes';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+console.log(process.env.DATABASE_URL)
 
 app.use('/api/v1', routes);
 
