@@ -26,7 +26,6 @@ export async function processVideoJob(job: Job) {
   // for (const format of job.resolutions) {
   //   const outputPath = path.join(tmpDir, `output_${format}.mp4`);
 
-  //   console.log(`🚀 Running FFmpeg for ${format}...`);
   //   await docker.run(
   //     "jrottenberg/ffmpeg:latest",
   //     [
@@ -42,7 +41,6 @@ export async function processVideoJob(job: Job) {
   //   );
 
   //   await uploadFile(outputPath, `outputs/${job.id}/${format}.mp4`);
-  //   console.log(`📤 Uploaded ${format} output to S3.`);
   // }
 
   // fs.rmSync(tmpDir, { recursive: true, force: true });
