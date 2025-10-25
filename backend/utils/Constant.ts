@@ -1,2 +1,2 @@
 
-export const QUEUE_NAME='kinesis'
+export const JOB_QUEUE='kinesis'

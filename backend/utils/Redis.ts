@@ -1,5 +1,5 @@
 import { createClient, type RedisClientType } from "redis";
-import { QUEUE_NAME } from "./Constant";
+import { JOB_QUEUE } from "./Constant";
 
 export class RedisManager {
     private static instance: RedisManager;
@@ -33,7 +33,7 @@ export class RedisManager {
     }
 
     public async addJob(videoId: string): Promise<boolean> {
-        await this.client.rPush(QUEUE_NAME, videoId);
+        await this.client.rPush(JOB_QUEUE, videoId);
         return true;
     }
 }

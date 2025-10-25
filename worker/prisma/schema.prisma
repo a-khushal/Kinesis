@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Videos {
+  videoId          String   @id @default(cuid())
+  originalFileName String
+  s3InputKey       String
+  contentType      String
+  status           Status   @default(PENDING)
+  resolutions      String[] @default([])
+  s3OutputPaths    String[] @default([])
+  createdAt        DateTime @default(now())
+}
+
+enum Status {
+  PENDING
+  PROCESSING
+  COMPLETED
+}
