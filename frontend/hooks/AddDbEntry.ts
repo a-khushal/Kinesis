@@ -31,7 +31,8 @@ export const addDbEntry = async ({
 
         const data = await response.json();
         return {
-            success: true
+            success: true,
+            data,
         }
     } catch (error) {
         console.error('failed uploading to db:', error);

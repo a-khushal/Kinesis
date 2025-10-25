@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { generatePresignedUploadUrl } from '../utils/PresignedUrl';
 import prisma from '../utils/DB';
+import { RedisManager } from '../utils/Redis';
 
 const router = Router();
 
@@ -30,7 +31,7 @@ router.post('/upload/success', async (require, res) => {
         const originalFileName = require.body.originalFileName;
         const s3InputKey = require.body.s3InputKey;
         const contentType = require.body.contentType;
-        const result = await prisma.videos.create({
+        const db_result = await prisma.videos.create({
             data: {
                 videoId,
                 originalFileName,
@@ -38,9 +39,12 @@ router.post('/upload/success', async (require, res) => {
                 contentType,
             },
         });
+        await RedisManager.getInstance().connect();
+        const redis_result = await RedisManager.getInstance().addJob(videoId);
         res.status(201).json({
             success: true,
-            data: result,
+            data: db_result,
+            redis_result,
         });
     } catch (error: any) {
         console.error('Error writing the DB:', error);

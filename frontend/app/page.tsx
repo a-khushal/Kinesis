@@ -28,7 +28,8 @@ export default function Home() {
         return;
       }
 
-      const res = await addDbEntry({ videoId, s3InputKey, originalFileName: file.name, contentType: file.type })
+      const res = await addDbEntry({ videoId, s3InputKey, originalFileName: file.name, contentType: file.type });
+      console.log(res);
       if (response.ok && res.success) {
         alert('File uploaded successfully!');
       }
