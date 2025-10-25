@@ -31,12 +31,14 @@ router.post('/upload/success', async (require, res) => {
         const originalFileName = require.body.originalFileName;
         const s3InputKey = require.body.s3InputKey;
         const contentType = require.body.contentType;
+        const resolutions = ["480", "720", "1080"];
         const db_result = await prisma.videos.create({
             data: {
                 videoId,
                 originalFileName,
                 s3InputKey,
                 contentType,
+                resolutions
             },
         });
         await RedisManager.getInstance().connect();

@@ -1,6 +1,6 @@
 import { createClient } from "redis";
 import { PrismaClient } from "./generated/prisma/client";
-import type { Job } from "./utils/types";
+import type { Job } from "./utils/Types";
 import { processVideoJob } from "./utils/FFmpeg";
 
 const JOB_QUEUE = "kinesis";
