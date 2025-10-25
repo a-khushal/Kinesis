@@ -9,7 +9,7 @@ const router = Router();
 
 router.post('/upload', async (req, res) => {
     try {
-        const bucketName = process.env.BUCKET_NAME!;
+        const bucketName = process.env.S3_BUCKET!;
         const fileName = req.body.fileName;
         const fileType = req.body.fileType;
         const videoId = uuidv4();

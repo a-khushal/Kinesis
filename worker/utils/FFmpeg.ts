@@ -1,36 +1,32 @@
 
-import Docker from "dockerode";
-import fs from "fs";
-import path from "path";
-import type { Job } from "./Types";
-import { getObject } from "./S3Client";
+import Docker from 'dockerode';
+import fs from 'fs';
+import path from 'path';
+
+import type { Job } from './Types';
+import { getObject, uploadFile } from './S3Client';
+import { FFMPEG_IMAGE, OUTPUT_FORMAT, RESOLUTIONS } from './Contants';
 
 const docker = new Docker();
 
-const RESOLUTIONS = [480, 720, 1080] as const;
-
 export async function processVideoJob(job: Job) {
-  try {
-    const tmpBase = path.join(__dirname, 'tmp');
-    const inputDir = path.join(tmpBase, 'input', job.videoId);
-    const outputDir = path.join(tmpBase, 'output', job.videoId);
+  const tmpBase = path.join(__dirname, 'tmp');
+  const inputDir = path.join(tmpBase, 'input', job.videoId);
+  const outputDir = path.join(tmpBase, 'output', job.videoId);
+  const inputPath = path.join(inputDir, job.originalFileName);
 
+  try {
     if (fs.existsSync(tmpBase)) {
       fs.rmSync(tmpBase, { recursive: true, force: true });
-      console.log('Cleaned up existing temporary directories');
     }
 
     fs.mkdirSync(inputDir, { recursive: true });
     fs.mkdirSync(outputDir, { recursive: true });
 
-    const fileExt = job.contentType.split('/')[1] || 'mp4';
-    const inputPath = path.join(inputDir, job.originalFileName);
-
     await getObject(job.s3InputKey, inputPath);
-    console.log(`Downloaded ${job.originalFileName} to ${inputPath}`);
 
     for (const resolution of RESOLUTIONS) {
-      const outputFileName = `${path.parse(job.originalFileName).name}_${resolution}p.${fileExt}`;
+      const outputFileName = `${path.parse(job.originalFileName).name}_${resolution}p.${OUTPUT_FORMAT}`;
       const outputPath = path.join(outputDir, outputFileName);
 
       let scaleFilter: string;
@@ -56,11 +52,9 @@ export async function processVideoJob(job: Job) {
         `/output/${outputFileName}`
       ];
 
-      console.log('Running FFmpeg with args:', args);
-
       await new Promise<void>((resolve, reject) => {
         docker.run(
-          'jrottenberg/ffmpeg:latest',
+          FFMPEG_IMAGE,
           args,
           process.stdout,
           {
@@ -68,26 +62,30 @@ export async function processVideoJob(job: Job) {
               Binds: [
                 `${path.dirname(inputDir)}:/input:ro`,
                 `${outputDir}:/output`
-              ]
+              ],
+              AutoRemove: true
             }
           },
-          (err: any) => {
-            if (err) {
-              console.error('FFmpeg error:', err);
-              return reject(err);
-            }
-            resolve();
-          }
+          (err: any) => err ? reject(err) : resolve()
         );
       });
 
-      console.log(`Converted to ${resolution}p: ${outputPath}`);
+      console.log(`Video transcoded successfully: ${job.videoId} ${outputFileName}`);
+      const s3Key = `converted/${job.videoId}/${outputFileName}`;
+      await uploadFile(outputPath, s3Key);
+      fs.unlinkSync(outputPath);
     }
 
-    console.log('Video processing completed');
-    return { success: true, outputDir };
-  } catch (err) {
-    console.error('Error processing video job:', err);
-    throw err;
+    fs.unlinkSync(inputPath);
+    fs.rmSync(tmpBase, { recursive: true, force: true });
+
+    console.log(`Video processed successfully: ${job.videoId}`);
+    return {
+      success: true,
+      outputDir: `s3://${process.env.S3_BUCKET}/converted/${job.videoId}`
+    };
+  } catch (error) {
+    console.error('Error processing video job:', error);
+    throw error;
   }
 }

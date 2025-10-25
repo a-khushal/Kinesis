@@ -1,30 +1,55 @@
-import {
-    S3Client,
-    GetObjectCommand,
-    PutObjectCommand,
-} from "@aws-sdk/client-s3";
-import fs from "fs";
-import { pipeline } from "stream/promises";
+import * as AWS from 'aws-sdk';
+import fs from 'fs';
+import path from 'path';
 
-const s3 = new S3Client({
-    region: process.env.AWS_REGION || "us-east-1",
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
+AWS.config.update({
+    region: process.env.AWS_REGION || 'us-east-1',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
 });
 
-const BUCKET = process.env.BUCKET_NAME!;
+const s3 = new AWS.S3();
+const BUCKET = process.env.S3_BUCKET!;
 
 export async function getObject(key: string, destPath: string) {
-    const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
-    if (!res.Body) throw new Error(`S3 object ${key} has no body`);
-    await pipeline(res.Body as any, fs.createWriteStream(destPath));
-    return destPath;
+    const file = fs.createWriteStream(destPath);
+
+    return new Promise<string>((resolve, reject) => {
+        s3.getObject({
+            Bucket: BUCKET,
+            Key: key
+        })
+            .createReadStream()
+            .on('error', reject)
+            .pipe(file)
+            .on('error', reject)
+            .on('close', () => resolve(destPath));
+    });
 }
 
 export async function uploadFile(filePath: string, key: string) {
     const fileStream = fs.createReadStream(filePath);
-    await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: fileStream }));
-    return key;
+    const fileExt = path.extname(filePath).toLowerCase();
+    const contentType = fileExt === '.mp4' ? 'video/mp4' :
+        fileExt === '.webm' ? 'video/webm' :
+            'application/octet-stream';
+
+    const params = {
+        Bucket: BUCKET,
+        Key: key,
+        Body: fileStream,
+        ContentType: contentType
+    };
+
+    return new Promise<string>((resolve, reject) => {
+        s3.upload(params, (err: Error, data: AWS.S3.ManagedUpload.SendData) => {
+            fileStream.destroy();
+            if (err) {
+                console.error('Error uploading file:', err);
+                return reject(err);
+            }
+            console.log(`File uploaded successfully to ${data.Location}`);
+            resolve(key);
+        });
+    });
 }
