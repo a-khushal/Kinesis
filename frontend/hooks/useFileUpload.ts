@@ -1,3 +1,5 @@
+'use client'
+
 export async function getPresignedUrl(file: File) {
   try {
     const response = await fetch('http://localhost:8000/api/v1/upload', {

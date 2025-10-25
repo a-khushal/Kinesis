@@ -1,5 +1,6 @@
+'use client'
 
-export const addDbEntry = async ({
+export const useAddDbEntry = async ({
     videoId,
     s3InputKey,
     originalFileName,

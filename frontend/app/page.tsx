@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { getPresignedUrl } from '../hooks/useFileUpload';
-import { addDbEntry } from '@/hooks/AddDbEntry';
+import { useAddDbEntry } from '@/hooks/useAddDbEntry';
 
 export default function Home() {
   const allowedVideoFormats = ['video/mp4', 'video/webm', 'video/ogg'];
@@ -28,7 +28,7 @@ export default function Home() {
         return;
       }
 
-      const res = await addDbEntry({ videoId, s3InputKey, originalFileName: file.name, contentType: file.type });
+      const res = await useAddDbEntry({ videoId, s3InputKey, originalFileName: file.name, contentType: file.type });
       console.log(res);
       if (response.ok && res.success) {
         alert('File uploaded successfully!');
