@@ -7,6 +7,5 @@ export interface Job {
     contentType: string;
     status: Status;
     resolutions: string[];
-    s3OutputPaths: string[];
     createdAt: Date;
 }

@@ -43,10 +43,9 @@ bun dev
 ```
 
 ## Todo
-- user session
 - container orchestration using k8s or smth else
+- video state management(PENDING, PROCESSING, COMPLETED, FAILED) for each resolution and when pushback to the queue, check if the video is already processed, better to have a table for each resolution referenced in the Videos table
+- user session
 - serve via CDN
-- db state update from PENDING to PROCESSING then to COMPLETED
-- db S3 path updates
-- obv ui improvements
 - support multiple output formats currently only mp4
+- obv ui improvements

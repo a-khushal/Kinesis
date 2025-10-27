@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import { PrismaClient } from "./generated/prisma/client";
+import { PrismaClient, Status } from "./generated/prisma/client";
 import type { Job } from "./utils/Types";
 import { processVideoJob } from "./utils/FFmpeg";
 
@@ -41,9 +41,28 @@ async function pollQueue() {
                         videoId
                     }
                 })
-                console.log(value);
+
                 if (!value) throw new Error("invalid video id, not found in db");
+
+                await db.videos.update({
+                    where: {
+                        videoId
+                    },
+                    data: {
+                        status: Status.PROCESSING
+                    }
+                })
+
+                console.log(value);
                 await processVideoJob(value);
+                await db.videos.update({
+                    where: {
+                        videoId
+                    },
+                    data: {
+                        status: Status.COMPLETED
+                    }
+                })
             } catch (err) {
                 if (err instanceof Error && err.message.includes("error while transcoding")) {
                     console.log("Error while processing job", err);
@@ -51,6 +70,15 @@ async function pollQueue() {
                 } else {
                     console.log("Error", err);
                 }
+
+                await db.videos.update({
+                    where: {
+                        videoId
+                    },
+                    data: {
+                        status: Status.FAILED
+                    }
+                })
             }
         } catch (err) {
             console.error("Error in worker loop:", err);
