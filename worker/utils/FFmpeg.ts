@@ -1,4 +1,3 @@
-
 import Docker from 'dockerode';
 import fs from 'fs';
 import path from 'path';
@@ -45,11 +44,11 @@ export async function processVideoJob(job: Job) {
       }
 
       const args = [
-        '-i', `/input/${job.videoId}/${job.originalFileName}`,
+        '-i', `/tmpdata/input/${job.videoId}/${job.originalFileName}`,
         '-vf', scaleFilter,
         '-c:a', 'copy',
         '-y',
-        `/output/${outputFileName}`
+        `/tmpdata/output/${job.videoId}/${outputFileName}`
       ];
 
       await new Promise<void>((resolve, reject) => {
@@ -60,8 +59,7 @@ export async function processVideoJob(job: Job) {
           {
             HostConfig: {
               Binds: [
-                `${path.dirname(inputDir)}:/input:ro`,
-                `${outputDir}:/output`
+                `${tmpBase}:/tmpdata`
               ],
               AutoRemove: true
             }
@@ -71,6 +69,12 @@ export async function processVideoJob(job: Job) {
       });
 
       console.log(`Video transcoded successfully: ${job.videoId} ${outputFileName}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (!fs.existsSync(outputPath)) {
+        throw new Error(`Output file not found at ${outputPath}`);
+      }
+
       const s3Key = `converted/${job.videoId}/${outputFileName}`;
       await uploadFile(outputPath, s3Key);
       fs.unlinkSync(outputPath);

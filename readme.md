@@ -35,11 +35,19 @@ npm run dev
 Open http://localhost:3000
 
 ### Worker
+
+manually
 ```bash
 cd worker
 cp .env.example .env
 bun install
 bun dev
+```
+
+using docker compose
+```bash
+cd worker
+AWS_ACCESS_KEY_ID=<access_key> AWS_SECRET_ACCESS_KEY=<secret_key> AWS_REGION=<region> S3_BUCKET=<bucket_name> docker compose up --build
 ```
 
 ## Todo

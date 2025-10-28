@@ -1,0 +1,11 @@
+.env*
+node_modules
+generated
+prisma/migrations
+
+bun-debug.log*
+*.log
+
+.gitignore
+
+docker-compose.yml

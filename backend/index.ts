@@ -8,7 +8,6 @@ const PORT = 8000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-console.log(process.env.DATABASE_URL)
 
 app.use('/api/v1', routes);
 
