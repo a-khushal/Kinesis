@@ -2,7 +2,7 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl ffmpeg && rm -rf /var/lib/apt/lists/*
 
 COPY package.json bun.lock ./
 

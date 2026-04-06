@@ -1,12 +1,47 @@
-import Docker from 'dockerode';
 import fs from 'fs';
+import { spawn } from 'node:child_process';
 import path from 'path';
 
 import type { Job } from './Types';
 import { getObject, uploadFile } from './S3Client';
-import { FFMPEG_IMAGE, OUTPUT_FORMAT, RESOLUTIONS } from './Contants';
+import { OUTPUT_FORMAT, RESOLUTIONS } from './Contants';
 
-const docker = new Docker();
+function runFfmpeg(inputPath: string, outputPath: string, scaleFilter: string) {
+  return new Promise<void>((resolve, reject) => {
+    const ffmpeg = spawn(
+      'ffmpeg',
+      [
+        '-i', inputPath,
+        '-vf', scaleFilter,
+        '-c:a', 'copy',
+        '-y',
+        outputPath
+      ],
+      {
+        stdio: ['ignore', 'ignore', 'pipe']
+      }
+    );
+
+    let stderr = '';
+    ffmpeg.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    ffmpeg.on('error', (error) => {
+      reject(error);
+    });
+
+    ffmpeg.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const message = stderr.trim() || `ffmpeg exited with code ${code}`;
+      reject(new Error(message));
+    });
+  });
+}
 
 export async function processVideoJob(job: Job) {
   const tmpBase = path.join(__dirname, 'tmp');
@@ -43,30 +78,7 @@ export async function processVideoJob(job: Job) {
           throw new Error(`Unsupported resolution: ${resolution}`);
       }
 
-      const args = [
-        '-i', `/tmpdata/input/${job.videoId}/${job.originalFileName}`,
-        '-vf', scaleFilter,
-        '-c:a', 'copy',
-        '-y',
-        `/tmpdata/output/${job.videoId}/${outputFileName}`
-      ];
-
-      await new Promise<void>((resolve, reject) => {
-        docker.run(
-          FFMPEG_IMAGE,
-          args,
-          process.stdout,
-          {
-            HostConfig: {
-              Binds: [
-                `${tmpBase}:/tmpdata`
-              ],
-              AutoRemove: true
-            }
-          },
-          (err: any) => err ? reject(err) : resolve()
-        );
-      });
+      await runFfmpeg(inputPath, outputPath, scaleFilter);
 
       console.log(`Video transcoded successfully: ${job.videoId} ${outputFileName}`);
       await new Promise(resolve => setTimeout(resolve, 500));

@@ -4,16 +4,57 @@ import type { Job } from "./utils/Types";
 import { processVideoJob } from "./utils/FFmpeg";
 
 const JOB_QUEUE = "kinesis";
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+
+let isStartingUp = true;
+
+function formatRedisConnectError(err: unknown): string {
+    if (err instanceof Error && err.message) return err.message;
+
+    if (err && typeof err === "object") {
+        const redisErr = err as {
+            syscall?: string;
+            code?: string;
+            address?: string;
+            port?: number;
+        };
+
+        const address = redisErr.address
+            ? redisErr.port
+                ? `${redisErr.address}:${redisErr.port}`
+                : redisErr.address
+            : "";
+
+        return [redisErr.syscall, redisErr.code, address].filter(Boolean).join(" ") || "unknown error";
+    }
+
+    return String(err);
+}
 
 const client = createClient({
-    url: process.env.REDIS_URL || "redis://localhost:6379",
+    url: REDIS_URL,
+    socket: {
+        reconnectStrategy: () => false,
+    },
 });
 
-client.on("error", (err) => console.error("Redis Client Error:", err));
+client.on("error", (err) => {
+    if (!isStartingUp) {
+        console.error("Redis client error:", err instanceof Error ? err.message : err);
+    }
+});
 client.on("connect", () => console.log("Redis Client Connected"));
 client.on("end", () => console.log("Redis Client Disconnected"));
 
-await client.connect();
+try {
+    await client.connect();
+    isStartingUp = false;
+} catch (err) {
+    const message = formatRedisConnectError(err);
+    console.error(`Worker startup failed: could not connect to Redis at ${REDIS_URL} (${message})`);
+    process.exit(1);
+}
+
 const db = new PrismaClient();
 
 let running = true;

@@ -7,7 +7,7 @@ Refer to [architecture.jpeg](./architecture.jpeg) for the system architecture.
 ### Prerequisites
 - Node.js 18+
 - Bun 1.0.0+ (`npm install -g bun`)
-- FFmpeg docker image
+- FFmpeg (for local worker execution)
 - AWS credentials
 - PostgreSQL
 - Redis
@@ -49,6 +49,8 @@ using docker compose
 cd worker
 AWS_ACCESS_KEY_ID=<access_key> AWS_SECRET_ACCESS_KEY=<secret_key> AWS_REGION=<region> S3_BUCKET=<bucket_name> docker compose up --build
 ```
+
+The worker image installs FFmpeg directly and does not require Docker socket mounting.
 
 ## Todo
 - container orchestration using k8s or smth else
