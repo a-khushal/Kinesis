@@ -10,6 +10,7 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 const BUCKET = process.env.S3_BUCKET!;
+const MAX_DELETE_BATCH = 1000;
 
 export async function getObject(key: string, destPath: string) {
     const file = fs.createWriteStream(destPath);
@@ -52,4 +53,52 @@ export async function uploadFile(filePath: string, key: string) {
             resolve(key);
         });
     });
+}
+
+async function listObjectKeys(prefix: string): Promise<string[]> {
+    const keys: string[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+        const response = await s3.listObjectsV2({
+            Bucket: BUCKET,
+            Prefix: prefix,
+            ContinuationToken: continuationToken,
+        }).promise();
+
+        for (const item of response.Contents || []) {
+            if (item.Key) keys.push(item.Key);
+        }
+
+        continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+    } while (continuationToken);
+
+    return keys;
+}
+
+async function deleteKeys(keys: string[]) {
+    for (let i = 0; i < keys.length; i += MAX_DELETE_BATCH) {
+        const batch = keys.slice(i, i + MAX_DELETE_BATCH);
+
+        await s3.deleteObjects({
+            Bucket: BUCKET,
+            Delete: {
+                Objects: batch.map((key) => ({ Key: key })),
+            },
+        }).promise();
+    }
+}
+
+export async function deleteVideoAssets(videoId: string, s3InputKey?: string) {
+    const convertedPrefix = `converted/${videoId}/`;
+    const convertedKeys = await listObjectKeys(convertedPrefix);
+    const keysToDelete = new Set(convertedKeys);
+
+    if (s3InputKey) {
+        keysToDelete.add(s3InputKey);
+    }
+
+    if (keysToDelete.size === 0) return;
+
+    await deleteKeys(Array.from(keysToDelete));
 }

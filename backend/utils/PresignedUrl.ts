@@ -31,3 +31,44 @@ export const generatePresignedUploadUrl = (
         });
     });
 }
+
+export const generatePresignedDownloadUrl = (
+    bucketName: string,
+    objectKey: string,
+    expirationSeconds: number = 3600
+): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const params = {
+            Bucket: bucketName,
+            Key: objectKey,
+            Expires: expirationSeconds,
+        };
+
+        s3.getSignedUrl("getObject", params, (err, url) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(url);
+            }
+        });
+    });
+}
+
+export const objectExists = async (
+    bucketName: string,
+    objectKey: string,
+): Promise<boolean> => {
+    try {
+        await s3.headObject({
+            Bucket: bucketName,
+            Key: objectKey,
+        }).promise();
+        return true;
+    } catch (error: any) {
+        if (error?.code === 'NotFound' || error?.statusCode === 404) {
+            return false;
+        }
+
+        throw error;
+    }
+}
