@@ -172,7 +172,7 @@ async function pollQueue() {
                     console.log("Error", err);
                 }
 
-                await db.videos.update({
+                await db.videos.updateMany({
                     where: {
                         videoId
                     },
@@ -180,6 +180,8 @@ async function pollQueue() {
                         status: Status.FAILED
                     }
                 })
+
+                await scheduleCleanup(videoId);
             }
         } catch (err) {
             console.error("Error in worker loop:", err);

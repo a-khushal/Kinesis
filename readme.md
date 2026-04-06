@@ -51,7 +51,7 @@ AWS_ACCESS_KEY_ID=<access_key> AWS_SECRET_ACCESS_KEY=<secret_key> AWS_REGION=<re
 ```
 
 The worker image installs FFmpeg directly and does not require Docker socket mounting.
-Processed files are retained for 1 hour, then the worker deletes both processed outputs and original upload from S3.
+Processed files are retained for 1 hour, then the worker deletes both processed outputs and original upload from S3 (including failed jobs).
 
 Download links can be fetched from:
 `GET /api/v1/videos/:videoId/downloads`
