@@ -1,64 +1,76 @@
-# Kinesis - The Video Transcoding Pipeline
+# Kinesis
 
-Refer to [architecture.jpeg](./architecture.jpeg) for the system architecture.
+Video upload + async transcoding pipeline with `backend` (API), `worker` (queue processor), and `frontend` (UI).
 
-## Setup
+Refer to [architecture.jpeg](./architecture.jpeg) for architecture.
 
-### Prerequisites
+## Requirements
+
 - Node.js 18+
-- Bun 1.0.0+ (`npm install -g bun`)
-- FFmpeg (for local worker execution)
-- AWS credentials
-- PostgreSQL
-- Redis
+- Bun
+- Docker + Docker Compose
+- AWS S3 credentials
 
-### Cloning the repo
+## Environment
+
+Create these files first:
+
 ```bash
-git clone https://github.com/a-khushal/Kinesis.git
-cd Kinesis
+cp backend/.env.example backend/.env
+cp worker/.env.example worker/.env
 ```
 
-### Backend (port 8000)
+Required values:
+
+- `DATABASE_URL`
+- `REDIS_URL`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `S3_BUCKET`
+
+## Run Locally
+
+Start services in separate terminals.
+
+1) Worker dependencies + worker container
+
+```bash
+cd worker
+docker compose up -d --build
+```
+
+2) Backend (`:8000`)
+
 ```bash
 cd backend
-cp .env.example .env
 bun install
 bun dev
 ```
 
-### Frontend (port 3000)
+3) Frontend (`:3000`)
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:3000
 
-### Worker
+Open `http://localhost:3000`.
 
-manually
-```bash
-cd worker
-cp .env.example .env
-bun install
-bun dev
-```
+## Notes
 
-using docker compose
-```bash
-cd worker
-AWS_ACCESS_KEY_ID=<access_key> AWS_SECRET_ACCESS_KEY=<secret_key> AWS_REGION=<region> S3_BUCKET=<bucket_name> docker compose up --build
-```
+- Worker runs FFmpeg inside the worker container (no Docker socket mount).
+- Processed files and original upload are deleted from S3 after 1 hour.
+- Download links endpoint: `GET /api/v1/videos/:videoId/downloads`
 
-The worker image installs FFmpeg directly and does not require Docker socket mounting.
-Processed files are retained for 1 hour, then the worker deletes both processed outputs and original upload from S3 (including failed jobs).
+## TODO
 
-Download links can be fetched from:
-`GET /api/v1/videos/:videoId/downloads`
-
-## Todo
 - container orchestration using k8s or smth else
 - video state management(PENDING, PROCESSING, COMPLETED, FAILED) for each resolution and when pushback to the queue, check if the video is already processed, better to have a table for each resolution referenced in the Videos table
+- better queue retry/backoff handling and dead-letter queue
+- atomic cleanup claiming if running multiple workers
+- migrate aws sdk v2 to v3 (backend + worker)
 - user session
 - serve via CDN
 - support multiple output formats currently only mp4
